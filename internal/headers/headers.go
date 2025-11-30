@@ -114,6 +114,10 @@ func (h Headers) Parse(data []byte) (int, bool, error) {
 	bytesConsumed := 0
 	done := false
 
+	if len(data) == 0 {
+		return bytesConsumed, true, nil
+	}
+
 	for {
 		idx := bytes.Index(data, []byte(constants.REQUEST_SEPARATOR))
 		if idx == -1 {

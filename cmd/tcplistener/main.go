@@ -84,10 +84,14 @@ func main() {
 			log.Fatal("error", err)
 		}
 
-		fmt.Println("Method: ", request.RequestLine.Method)
-		fmt.Println("Target: ", request.RequestLine.RequestTarget)
-		fmt.Println("Version: ", request.RequestLine.HttpVersion)
-
+		fmt.Println("Request Line:")
+		fmt.Println("- Method: ", request.RequestLine.Method)
+		fmt.Println("- Target: ", request.RequestLine.RequestTarget)
+		fmt.Println("- Version: ", request.RequestLine.HttpVersion)
+		fmt.Println("Headers:")
+		for key, value := range request.RequestHeaders {
+			fmt.Println("- ", key, ": ", value)
+		}
 	}
 
 }
