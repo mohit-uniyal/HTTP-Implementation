@@ -64,7 +64,15 @@ func (h Headers) Get(name string) string {
 }
 
 func (h Headers) set(name, value string) {
-	h[strings.ToLower(name)] = value
+	fieldName := strings.ToLower(name)
+
+	fieldValue, exists := h[fieldName]
+
+	if exists {
+		h[fieldName] = fmt.Sprintf("%s,%s", fieldValue, value)
+	} else {
+		h[fieldName] = value
+	}
 }
 
 func (h Headers) parseFieldLine(fieldLineData string) error {
