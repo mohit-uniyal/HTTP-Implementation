@@ -3,7 +3,7 @@ package headers
 import (
 	"bytes"
 	"fmt"
-	"http/internal/request"
+	"http/internal/constants"
 	"log"
 	"strings"
 )
@@ -115,14 +115,14 @@ func (h Headers) Parse(data []byte) (int, bool, error) {
 	done := false
 
 	for {
-		idx := bytes.Index(data, []byte(request.REQUEST_SEPARATOR))
+		idx := bytes.Index(data, []byte(constants.REQUEST_SEPARATOR))
 		if idx == -1 {
 			break
 		}
 
 		if idx == 0 {
 			done = true
-			bytesConsumed += len(request.REQUEST_SEPARATOR)
+			bytesConsumed += len(constants.REQUEST_SEPARATOR)
 			break
 		}
 
@@ -130,8 +130,8 @@ func (h Headers) Parse(data []byte) (int, bool, error) {
 			return 0, false, err
 		}
 
-		bytesConsumed += len(data[:idx]) + len(request.REQUEST_SEPARATOR)
-		data = data[idx+len(request.REQUEST_SEPARATOR):]
+		bytesConsumed += len(data[:idx]) + len(constants.REQUEST_SEPARATOR)
+		data = data[idx+len(constants.REQUEST_SEPARATOR):]
 	}
 
 	return bytesConsumed, done, nil

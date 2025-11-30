@@ -3,6 +3,8 @@ package request
 import (
 	"bytes"
 	"fmt"
+	"http/internal/constants"
+	"http/internal/headers"
 	"io"
 	"regexp"
 )
@@ -10,8 +12,9 @@ import (
 type RequestState string
 
 const (
-	RequestInitialized RequestState = "REQUEST_INITIALIZED"
-	RequestDone        RequestState = "REQUEST_DONE"
+	RequestInitialized    RequestState = "REQUEST_INITIALIZED"
+	RequestParsingHeaders RequestState = "REQUEST_PARSING_HEADERS"
+	RequestDone           RequestState = "REQUEST_DONE"
 )
 
 type HttpMethods string
@@ -59,11 +62,10 @@ func IsValidHttpVersion(httpVersion string) bool {
 	}
 }
 
-var REQUEST_SEPARATOR = "\r\n"
-
 type Request struct {
-	RequestLine RequestLine
-	State       RequestState
+	RequestLine    RequestLine
+	RequestHeaders headers.Headers
+	State          RequestState
 }
 
 type RequestLine struct {
@@ -72,10 +74,14 @@ type RequestLine struct {
 	Method        string
 }
 
+func NewRequestLine() RequestLine {
+	return RequestLine{}
+}
+
 // returns number of bytes consumed. Returns 0 and no error if \r\n is not found.
 func (r *Request) parseRequestLine(data []byte) (int, error) {
 
-	firstIndex := bytes.Index(data, []byte(REQUEST_SEPARATOR))
+	firstIndex := bytes.Index(data, []byte(constants.REQUEST_SEPARATOR))
 	if firstIndex == -1 {
 		return 0, nil
 	}
@@ -123,7 +129,7 @@ func (r *Request) parseRequestLine(data []byte) (int, error) {
 
 	r.RequestLine = parsedRequestLine
 
-	return len(requestLine), nil
+	return len(requestLine) + len(constants.REQUEST_SEPARATOR), nil
 
 }
 
@@ -140,10 +146,24 @@ func (r *Request) parse(data []byte) (int, error) {
 		}
 
 		if numberOfBytesConsumed != 0 {
-			r.State = RequestDone
+			r.State = RequestParsingHeaders
 		}
 
 		read = numberOfBytesConsumed
+	case RequestParsingHeaders:
+		numberOfBytesConsumed, done, err := r.RequestHeaders.Parse(data)
+		if err != nil {
+			return 0, err
+		}
+
+		if numberOfBytesConsumed != 0 {
+			read = numberOfBytesConsumed
+		}
+
+		if done {
+			r.State = RequestDone
+		}
+
 	case RequestDone:
 		read = 0
 	default:
@@ -157,7 +177,9 @@ func (r *Request) parse(data []byte) (int, error) {
 
 func RequestFromReader(reader io.Reader) (*Request, error) {
 	parsedRequest := &Request{
-		State: RequestInitialized,
+		State:          RequestInitialized,
+		RequestLine:    NewRequestLine(),
+		RequestHeaders: headers.NewHeaders(),
 	}
 
 	buf := make([]byte, 1024)
