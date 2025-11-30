@@ -8,6 +8,33 @@ import (
 	"strings"
 )
 
+var VALID_FIELD_NAME_CHARACTERS = func() map[rune]bool {
+	m := make(map[rune]bool)
+
+	// A–Z
+	for c := 'A'; c <= 'Z'; c++ {
+		m[c] = true
+	}
+
+	// a–z
+	for c := 'a'; c <= 'z'; c++ {
+		m[c] = true
+	}
+
+	// 0–9
+	for c := '0'; c <= '9'; c++ {
+		m[c] = true
+	}
+
+	// Special characters
+	specials := "!#$%&'*+-.^_`|~"
+	for _, c := range specials {
+		m[c] = true
+	}
+
+	return m
+}()
+
 func isValidFieldName(fieldName string) bool {
 	if len(fieldName) == 0 {
 		return false
@@ -17,6 +44,12 @@ func isValidFieldName(fieldName string) bool {
 		return false
 	}
 
+	for _, char := range fieldName {
+		if _, exists := VALID_FIELD_NAME_CHARACTERS[char]; !exists {
+			return false
+		}
+	}
+
 	return true
 }
 
@@ -24,6 +57,14 @@ type Headers map[string]string
 
 func NewHeaders() Headers {
 	return make(Headers)
+}
+
+func (h Headers) Get(name string) string {
+	return h[strings.ToLower(name)]
+}
+
+func (h Headers) set(name, value string) {
+	h[strings.ToLower(name)] = value
 }
 
 func (h Headers) parseFieldLine(fieldLineData string) error {
@@ -55,7 +96,7 @@ func (h Headers) parseFieldLine(fieldLineData string) error {
 
 	//5. set the header with field name set to all lowercase
 
-	h[fieldName] = fieldValue
+	h.set(fieldName, fieldValue)
 
 	return nil
 }
